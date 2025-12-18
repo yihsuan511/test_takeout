@@ -300,9 +300,9 @@
       
       const pickup_display = `${reservationDate.value} ${reservationTime.value}`;
       const pickup_time = `${reservationDate.value}T${reservationTime.value}:00+08:00`;
-      // const reservationDateTime = new Date(`${reservationDate.value}T${reservationTime.value}:00`);
-      // const localDateTime = `${reservationDate.value}T${reservationTime.value}:00`;
-      // const pickupDate = new Date(localDateTime);
+      const reservationDateTime = new Date(`${reservationDate.value}T${reservationTime.value}:00`);
+      const localDateTime = `${reservationDate.value}T${reservationTime.value}:00`;
+      const pickupDate = new Date(localDateTime);
 
       // 手動調整為台灣時區 (UTC+8)
       // 假設用戶選擇的是台灣當地時間,需要轉換為正確的 UTC
@@ -797,3 +797,4 @@
     </script>
   </body>
 </html>
+
