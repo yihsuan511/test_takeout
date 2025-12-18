@@ -460,13 +460,13 @@
     function updateAuthUI() {
       const auth = document.getElementById("authButtons");
       if (currentUser) {
-        const historyURL = `https://two0250921-history.onrender.com?phone=${currentUser.phone}&source=${encodeURIComponent('外帶')}`;
+        const historyURL = `https://test-history-order.onrender.com?phone=${currentUser.phone}&source=${encodeURIComponent('外帶')}`;
         auth.innerHTML = `
           <div class="dropdown">
             <button>歡迎回來！${currentUser.name}</button>
             <div class="dropdown-content">
               <a href="${historyURL}">🧾 歷史訂單</a>
-              <a href="https://two0280811-4.onrender.com?phone=${currentUser.phone}">📝 編輯會員資料</a>
+              <a href="https://test-member-takeout.onrender.com?phone=${currentUser.phone}">📝 編輯會員資料</a>
               <a href="#" onclick="logout()">🚪 登出</a>
             </div>
           </div>`;
