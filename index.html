@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>吃得飽牛肉麵 — 外帶點餐系統</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* --- 這裡保留你原本的 CSS --- */
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 10px; }
+    h1 { text-align: center; color: #333; font-size: 24px; margin-bottom: 20px; }
+    .container { display: flex; flex-direction: column; gap: 20px; max-width: 900px; margin: auto; }
+    .menu, .preview { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .menu h2, .preview h2 { border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 15px; color: #555; font-size: 20px; }
+    .menu h3 { color: #777; margin-top: 15px; margin-bottom: 8px; font-weight: 900; font-size: 18px; }
+    .item { display: flex; flex-direction: column; margin-bottom: 10px; background: #fafafa; padding: 8px; border-radius: 8px; }
+    .quantity-control { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+    .quantity-control input { width: 40px; text-align: center; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; padding: 5px; }
+    .item button { margin-top: 8px; padding: 5px 10px; border: none; border-radius: 5px; background: #66b; color: white; cursor: pointer; font-size: 14px; }
+    button.submit-btn { width: 100%; padding: 15px; background-color: #66b; color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; margin-top: 20px; transition: background-color 0.3s; }
+    button.submit-btn:hover { background-color: #e65c00; }
+    .customization select { margin-bottom: 5px; padding: 6px; border-radius: 5px; border: 1px solid #bbb; background-color: white; font-size: 14px; }
+    .preview ul { list-style: none; padding: 0; }
+    .preview li { padding: 10px 0; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; font-size: 16px; }
+    .preview li:hover { background: #ffe6e6; }
+    #totalPrice { margin-top: 20px; font-size: 18px; font-weight: bold; text-align: center; }
+    @media (min-width: 768px) { .container { flex-direction: row; } .menu, .preview { flex: 1; } }
+    .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-bottom: 2px solid #eee; position: sticky; top: 0; z-index: 1000; }
+    .header .logo { font-size: 20px; font-weight: bold; color: #333; }
+    .auth-buttons button { padding: 8px 16px; background-color: #66b; color: white; border: none; border-radius: 8px; margin-left: 10px; cursor: pointer; transition: background-color 0.3s; }
+    .auth-buttons button:hover { background-color: #e65c00; }
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content { display: none; position: absolute; right: 0; background-color: #fff; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border-radius: 8px; min-width: 160px; z-index: 2000; }
+    .dropdown-content a { padding: 10px 16px; display: block; color: #333; text-decoration: none; border-bottom: 1px solid #eee; }
+    .dropdown-content a:hover { background-color: #f5f5f5; }
+    .dropdown:hover .dropdown-content { display: block; }
+    .modal { display: none; position: fixed; z-index: 1500; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+    .modal-content { background-color: #fff; margin: auto; padding: 20px 30px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; }
+    .modal-content input { width: 100%; padding: 10px; margin: 8px 0 16px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+    .modal-submit { width: 100%; padding: 10px; background-color: #66b; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    .modal-submit:hover { background-color: #e65c00; }
+    .close { color: #aaa; font-size: 28px; position: absolute; top: 10px; right: 20px; cursor: pointer; }
+    .reservation-section {
+      margin-top: 15px;
+      padding: 15px;
+      background: #fdfdfd;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      animation: fadeIn 0.4s ease-in-out;
+    }
+    .reservation-section h3 {
+      font-size: 16px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    .reservation-input {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .reservation-input select, .reservation-input input {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    .reservation-input select:hover, .reservation-input input:hover {
+      border-color: #666;
+    }
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(10px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+    #backToTopBtn { display: none; position: fixed; bottom: 30px; right: 30px; z-index: 1000; background: #66b; color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.15); text-align: center; line-height: 50px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">吃得飽牛肉麵-外帶專區🥡</div>
+    <div class="auth-buttons" id="authButtons">
+      <button onclick="openModal('login')">會員登入</button>
+      <button onclick="openModal('register')">會員註冊</button>
+    </div>
+  </div>
+
+  <!-- 彈跳視窗 -->
+  <div class="modal" id="authModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2 id="modalTitle">登入</h2>
+      <form id="authForm">
+        <div id="nameField" style="display:none;">
+          <label>姓名：</label>
+          <input type="text" id="nameInput" placeholder="請輸入姓名" />
+        </div>
+        <label>電話號碼：</label>
+        <input type="tel" id="phoneInput" required placeholder="請輸入電話" />
+        <label>密碼：</label>
+        <input type="password" id="passwordInput" required placeholder="請輸入密碼" />
+        <button type="submit" class="modal-submit">送出</button>
+      </form>
+    </div>
+  </div>
+
+  <button id="backToTopBtn" title="回到頂部">↑</button>
+ 
+  <!-- 訂單完成大視窗 Modal -->
+    <div class="modal" id="orderModal">
+      <div class="modal-content" style="max-width:600px; text-align:center;">
+        <span class="close" onclick="closeOrderModal()">&times;</span>
+        <h2 style="font-size:28px; color:#66b;">訂單完成 ✅</h2>
+        <p id="orderNumber" style="font-size:22px; font-weight:bold; margin:15px 0;"></p>
+        <p id="pickupTime" style="font-size:20px; margin:10px 0;"></p>
+        <div id="orderDetails" style="text-align:left; margin:20px 0; font-size:18px;"></div>
+        <p id="orderTotal" style="font-size:22px; font-weight:bold; color:#333;"></p>
+      </div>
+    </div>
+
+  <h1>簡單點</h1>
+  <div class="container">
+    <div class="menu" id="orderForm">
+      <h2>吃得飽家常牛肉麵</h2>
+      <p style="font-size: 14px;">(02)8931-3318 (每周一公休)</p>
+       <!-- 時間選擇區塊 -->
+      <div class="reservation-section">
+        <h3>選擇用餐日期與時間</h3>
+        <div class="reservation-input">
+         <select id="reservationDate"></select>
+         <select id="reservationTime"></select>
+       </div>
+         <div id="capacityInfo" style="margin-top: 10px; padding: 10px; border-radius: 8px; font-weight: bold; display: none;"></div>
+      </div>
+      <div id="menuItems"></div>
+      <button class="submit-btn" id="submitOrder">送出訂單</button>
+    </div>
+    <div class="preview">
+      <h2>已選擇品項（點擊刪除）</h2>
+      <ul id="selectedItems"></ul>
+      <h3 id="totalPrice">總價：0 元</h3>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://test-node-js-e6du.onrender.com";
+    // ---- 全域變數 ----
+    const menuItemsDiv = document.getElementById("menuItems");
+    const selectedItems = document.getElementById("selectedItems");
+    const totalPrice = document.getElementById("totalPrice");
+
+    let orderList = [];
+    let currentUser = null;
+
+    // 標記來源為外帶
+    localStorage.setItem("historySource", "外帶");
+
+    const menuData = {
+      麵類: [{ name: "牛肉麵", price: 140 }, { name: "牛肉湯麵", price: 110 }, { name: "榨菜牛肉麵", price: 120 }, { name: "餛飩麵", price: 90 }, { name: "酸辣麵", price: 90 }, { name: "榨醬麵", price: 80 }, { name: "肉燥乾麵", price: 80 }],
+      餃類: [{ name: "水餃（10顆）", price: 60 }, { name: "牛肉湯餃", price: 110 }, { name: "酸辣湯餃", price: 100 }],
+      湯品: [{ name: "牛肉湯(6塊肉)", price: 90 }, { name: "酸辣湯", price: 90 }, { name: "餛飩湯", price: 90 }, { name: "牛肉清湯", price: 90 }]
+    };
+
+    // 生成菜單
+    for (const category in menuData) {
+      const catTitle = document.createElement("h3");
+      catTitle.textContent = category;
+      if (category === "麵類") catTitle.innerHTML += ' <span style="font-size:12px;color:#999;">（大碗加10元）</span>';
+      menuItemsDiv.appendChild(catTitle);
+
+      menuData[category].forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <strong>${item.name} - ${item.price}元</strong>
+          ${category === "麵類" ? `
+            <label>麵條粗細：
+              <select class="noodleType">
+                <option value="細麵">細麵</option>
+                <option value="粗麵">粗麵</option>
+              </select>
+            </label>
+            <label>碗型：
+              <select class="size">
+                <option value="小碗">小碗</option>
+                <option value="大碗">大碗（+10元）</option>
+              </select>
+            </label>
+            <label>辣度：
+              <select class="spicy">
+                <option value="不辣">不辣</option>
+                <option value="微辣">微辣</option>
+                <option value="中辣">中辣</option>
+                <option value="大辣">大辣</option>
+              </select>
+            </label>
+          ` : ''}
+          <label>數量：
+            <input type="number" min="1" value="1" class="qtyInput">
+          </label>
+          <button class="addBtn">加入餐點</button>
+        `;
+        menuItemsDiv.appendChild(div);
+
+        div.querySelector(".addBtn").addEventListener("click", () => {
+          const qty = parseInt(div.querySelector(".qtyInput").value);
+          if (qty <= 0) return;
+          let extraPrice = 0;
+          let customizationText = '';
+          let customization = {};
+
+          if (category === "麵類") {
+            const noodle = div.querySelector(".noodleType").value;
+            const size = div.querySelector(".size").value;
+            const spicy = div.querySelector(".spicy").value;
+            if (size.includes("大碗")) extraPrice = 10;
+
+
+            customizationText = `（${noodle}｜${size}｜${spicy}）`;
+            customization = { 麵條: noodle, 碗型: size, 辣度: spicy };
+          }
+
+        const finalPrice = item.price + extraPrice;
+       
+        // 檢查是否已存在相同的品項（包含完全相同的客製化選項）
+        const existingItemIndex = orderList.findIndex(orderItem =>
+          orderItem.name === item.name &&
+          orderItem.price === finalPrice &&
+          areCustomizationsEqual(orderItem.customization, customization)
+        );
+
+        if (existingItemIndex !== -1) {
+          // 如果找到相同品項，則合併數量
+          orderList[existingItemIndex].quantity += qty;
+         
+          // 更新顯示文字
+          const totalItemPrice = orderList[existingItemIndex].price * orderList[existingItemIndex].quantity;
+          orderList[existingItemIndex].text = `${item.name}${customizationText} x ${orderList[existingItemIndex].quantity} = ${totalItemPrice} 元`;
+        } else {
+          // 如果沒有找到相同品項，則新增
+          const itemTotal = finalPrice * qty;
+          const orderItem = {
+            name: item.name,
+            price: finalPrice,
+            quantity: qty,
+            customization,
+            text: `${item.name}${customizationText} x ${qty} = ${itemTotal} 元`,
+          };
+          orderList.push(orderItem);
+        }
+        renderCart();
+        });
+      });
+    }
+      function areCustomizationsEqual(c1, c2) {
+    const keys1 = Object.keys(c1);
+    const keys2 = Object.keys(c2);
+    if (keys1.length !== keys2.length) return false;
+    return keys1.every(key => c1[key] === c2[key]);
+  }
+    function renderCart() {
+      selectedItems.innerHTML = '';
+      let total = 0;
+      orderList.forEach((item, idx) => {
+        const li = document.createElement("li");
+        li.textContent = item.text;
+        li.addEventListener("click", () => {
+          orderList.splice(idx, 1);
+          renderCart();
+        });
+        selectedItems.appendChild(li);
+        total += item.price * item.quantity;
+      });
+      totalPrice.textContent = `總價：${total} 元`;
+    }
+
+    // 驗證會員是否仍然存在
+    async function validateMemberExists(phone) {
+      try {
+        const response = await fetch(`${API_BASE}/api/member/${phone}`);
+        if (!response.ok) {
+          return false; // 會員不存在
+        }
+        return true; // 會員存在
+      } catch (error) {
+        console.error('驗證會員失敗:', error);
+        return false;
+      }
+    }
+
+    // 送單事件
+    document.getElementById("submitOrder").addEventListener("click", async() => {
+      // 先獲取預約時間
+      const reservationDate = document.getElementById("reservationDate");
+      const reservationTime = document.getElementById("reservationTime");
+
+      // 檢查是否選擇了預約時間
+      if (!reservationDate.value || !reservationTime.value) {
+        alert("請選擇取餐日期和時間！");
+        return;
+      }
+      
+      const reservationDateTime = new Date(`${reservationDate.value}T${reservationTime.value}:00`);
+      const localDateTime = `${reservationDate.value}T${reservationTime.value}:00`;
+      const pickupDate = new Date(localDateTime);
+
+      // 手動調整為台灣時區 (UTC+8)
+      // 假設用戶選擇的是台灣當地時間,需要轉換為正確的 UTC
+      const taiwanOffset = 8 * 60; // 8小時 = 480分鐘
+      const userTimezoneOffset = pickupDate.getTimezoneOffset(); // 用戶時區偏移(分鐘)
+      const offsetDiff = taiwanOffset + userTimezoneOffset;
+      pickupDate.setMinutes(pickupDate.getMinutes() - offsetDiff);
+
+      // 轉換為 ISO 字串傳給後端
+      const pickup_time = pickupDate.toISOString();
+
+      console.log('用戶選擇的時間:', localDateTime);
+      console.log('轉換後的 UTC 時間:', pickup_time);
+      const pickup_display = `${reservationDate.value} ${reservationTime.value}:00`; // 用於前端顯示，保持原本用戶選擇的時間格式
+      console.log('預約取餐時間:', pickup_time); // 除錯用
+      
+      if (!currentUser) {
+        if (confirm("需要先會員登入才能送出訂單，是否要立即登入？")) {
+          openModal('login');
+        }
+        return;
+      }
+
+      // 驗證會員是否仍然存在
+      const memberExists = await validateMemberExists(currentUser.phone);
+      if (!memberExists) {
+        alert("您的會員帳號已失效，請重新登入");
+        logout(); // 清除前端狀態
+        openModal('login');
+        return;
+      }
+      if (orderList.length === 0) {
+        alert("請先加入至少一項餐點！");
+        return;
+      }
+      const total = orderList.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      const itemsToSend = orderList.map(item => ({
+        item_name: item.name,
+        quantity: item.quantity,
+        custom_options: JSON.stringify(item.customization),
+        price: item.price,
+        table_number: "外帶",
+        takeout: "外帶"
+      }));
+      // 新增：檢查訂單容量
+    try {
+        const capacityResponse = await fetch(`${API_BASE}/api/orders/check-capacity?pickup_time=${encodeURIComponent(pickup_time)}`);
+        const capacityData = await capacityResponse.json();
+        
+        console.log('時段容量檢查:', capacityData);
+        
+        if (capacityData.is_blocked) {
+            alert(capacityData.message);
+            return; // 阻止送單
+        }
+    } catch (error) {
+        console.error('檢查訂單容量失敗:', error);
+    }
+      const orderData = {
+        items: itemsToSend,
+        total_price: total,
+        phone: currentUser.phone,
+        pickup_time: pickup_time,
+        table_number: "外帶",
+        takeout: "外帶"
+    };
+    console.log('送出的訂單資料:', orderData);
+    try {
+      const response = await fetch(`${API_BASE}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        showOrderModal(data.order_id, total, itemsToSend, pickup_display);
+        orderList = [];
+        renderCart();
+      } else {
+        console.error('訂單建立失敗:', data);
+        alert(`訂單建立失敗: ${data.message || '未知錯誤'}`);
+      }
+    } catch (err) {
+      console.error('網路請求失敗:', err);
+      alert("送出訂單時發生錯誤，請稍後再試。");
+    }
+  });
+
+    // 回頂部按鈕
+    document.getElementById("backToTopBtn").onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.onscroll = () => document.getElementById("backToTopBtn").style.display = window.scrollY > 200 ? "block" : "none";
+
+    // 會員登入/註冊
+    function openModal(type) {
+      const modal = document.getElementById("authModal");
+      const title = document.getElementById("modalTitle");
+      const nameField = document.getElementById("nameField");
+      const form = document.getElementById("authForm");
+
+      form.reset();
+      nameField.style.display = (type === "register") ? "block" : "none";
+      title.textContent = type === "register" ? "會員註冊" : "會員登入";
+
+      form.onsubmit = async function(e) {
+        e.preventDefault();
+        const name = document.getElementById("nameInput").value;
+        const phone = document.getElementById("phoneInput").value;
+        const password = document.getElementById("passwordInput").value;
+
+        try {
+          let response;
+          if (type === "register") {
+            console.log("送出註冊資料:", { name, phone, password });
+            response = await fetch(`${API_BASE}/api/member/register`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, phone, password })
+            });
+          } else {
+            response = await fetch(`${API_BASE}/api/member/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phone, password })
+            });
+          }
+
+          const data = await response.json();
+          if (response.ok) {
+            if (type === "register"){   
+                // 註冊成功後不要直接設置 currentUser
+                alert("註冊成功！請重新登入");
+                // 切換到登入模式
+                openModal('login');
+            }
+            else currentUser = { name: data.member.name, phone: data.member.phone };
+            sessionStorage.setItem("phone", currentUser.phone);
+            sessionStorage.setItem("name", currentUser.name);
+            updateAuthUI();
+            closeModal();
+            alert(type === "register" ? "註冊成功" : "登入成功");
+          } else {
+            alert(data.error || "操作失敗，請確認資料後再試");
+          }
+        } catch (err) {
+          console.error('Fetch 失敗:', err);
+          alert(`Fetch 失敗，可能是網路或 CORS 問題: ${err.message}`);
+        }
+      };
+      modal.style.display = "flex";
+    }
+
+    function closeModal() { document.getElementById("authModal").style.display = "none"; }
+
+    // 更新會員選單
+    function updateAuthUI() {
+      const auth = document.getElementById("authButtons");
+      if (currentUser) {
+        const historyURL = `https://two0250921-history.onrender.com?phone=${currentUser.phone}&source=${encodeURIComponent('外帶')}`;
+        auth.innerHTML = `
+          <div class="dropdown">
+            <button>歡迎回來！${currentUser.name}</button>
+            <div class="dropdown-content">
+              <a href="${historyURL}">🧾 歷史訂單</a>
+              <a href="https://two0280811-4.onrender.com?phone=${currentUser.phone}">📝 編輯會員資料</a>
+              <a href="#" onclick="logout()">🚪 登出</a>
+            </div>
+          </div>`;
+      } else {
+        auth.innerHTML = `
+          <button onclick="openModal('login')">會員登入</button>
+          <button onclick="openModal('register')">會員註冊</button>
+        `;
+      }
+    }
+
+    function logout() {
+      currentUser = null;
+      sessionStorage.removeItem("phone");
+      sessionStorage.removeItem("name");
+      updateAuthUI();
+    }
+    function showOrderModal(orderId, total, items = [], pickup_time) {
+      document.getElementById("orderNumber").textContent = `訂單編號：#${orderId}`;
+      document.getElementById("pickupTime").textContent = `預估取餐時間：約 ${pickup_time}`; // 使用選擇時間
+
+      let detailsHtml = "<ul>";
+      items.forEach(i => {
+        detailsHtml += `<li>${i.item_name} x ${i.quantity} - ${i.price} 元</li>`;
+      });
+      detailsHtml += "</ul>";
+      document.getElementById("orderDetails").innerHTML = detailsHtml;
+
+      document.getElementById("orderTotal").textContent = `總金額：${total} 元`;
+      document.getElementById("orderModal").style.display = "flex";
+    }
+
+    function closeOrderModal() {
+      document.getElementById("orderModal").style.display = "none";
+    }
+
+    // 取餐時間選擇
+    const reservationDate = document.getElementById("reservationDate");
+    const reservationTime = document.getElementById("reservationTime");
+
+    // 獲取星期幾的中文名稱
+    function getWeekdayName(date) {
+    const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+    return weekdays[date.getDay()];
+    }
+
+    // 生成日期選項（顯示格式：9/21 今天、9/22 週一等）
+    function generateDateOptions() {
+    const today = new Date();
+      for (let i = 0; i < 2; i++) {
+      const date = new Date();
+      date.setDate(today.getDate() + i);
+      
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; // YYYY-MM-DD 格式
+      
+      let displayText;
+      if (i === 0) {
+        displayText = `${month}/${day} 今天`;
+      } else {
+        const weekday = getWeekdayName(date);
+        displayText = `${month}/${day} ${weekday}`;
+      }
+      
+      const option = document.createElement("option");
+      option.value = dateStr;
+      option.textContent = displayText;
+      reservationDate.appendChild(option);
+    }
+    }
+
+    function generateTimeOptions(selectedDateStr) {
+    reservationTime.innerHTML = "";
+    const storeStartHour = 11; // 店家營業時間開始
+    const endHour = 20; // 到 20:00
+    const latestMinute = 30; // 最晚 19:30
+
+    let now = new Date();
+    let selectedDate = new Date(selectedDateStr);
+    let isToday = selectedDate.toDateString() === now.toDateString();
+    
+    // 決定開始時間
+    let startHour = storeStartHour;
+    let startMinute = 0;
+    
+    if (isToday) {
+      // 1. 計算現在時間 + 20 分鐘
+      // 複製現在時間，並加上 20 分鐘
+      const twentyMinLater = new Date(now.getTime() + 20 * 60000); 
+      
+      // 2. 獲取 20 分鐘後的時間
+      let targetHour = twentyMinLater.getHours();
+      let targetMinute = twentyMinLater.getMinutes();
+
+      // 3. 將分鐘數四捨五入到最近的 10 分鐘整數 (向上取整)
+      // 例如：23 -> 30, 31 -> 40, 40 -> 40
+      startMinute = Math.ceil(targetMinute / 10) * 10;
+      startHour = targetHour;
+      
+      // 4. 處理分鐘進位到 60 的情況 (例如 11:51 變成 12:00)
+      if (startMinute >= 60) {
+        startHour += 1;
+        startMinute = 0;
+      }
+      
+      // 5. 確保不會早於店家營業時間
+      if (startHour < storeStartHour) {
+        startHour = storeStartHour;
+        startMinute = 0;
+      }
+    }
+
+    for (let hour = startHour; hour < endHour; hour++) {
+      let minuteStart = (hour === startHour) ? startMinute : 0;
+      
+      for (let minute = minuteStart; minute < 60; minute += 10) {
+        if (hour === 19 && minute > latestMinute) continue;
+
+
+        let timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        let option = document.createElement("option");
+        option.value = timeStr;
+        option.textContent = timeStr;
+        reservationTime.appendChild(option);
+      }
+    }
+      // 如果沒有可選時間，顯示提示
+    if (reservationTime.children.length === 0) {
+      let option = document.createElement("option");
+      option.value = "";
+      option.textContent = "今日已過營業時間";
+      option.disabled = true;
+      reservationTime.appendChild(option);
+    }
+    }
+
+    // 初始化日期和時間選項
+    generateDateOptions();
+    generateTimeOptions(reservationDate.value);
+
+    // 當日期改變時，重新生成時間
+    reservationDate.addEventListener("change", () => {
+    generateTimeOptions(reservationDate.value);
+      checkTimeSlotCapacity();
+    });
+
+    // 當時間改變時，重新生成時間
+    reservationTime.addEventListener("change", () => {
+    checkTimeSlotCapacity();
+    });
+
+  
+      // 初始化後檢查預設時間的容量
+      setTimeout(() => {
+        checkTimeSlotCapacity();
+      }, 100);
+
+     // 頁面載入時檢查並顯示提示
+     async function checkAndShowCapacityWarning() {
+       try {
+          // 取得當前頁面預設的取餐時間
+           const defaultDate = document.getElementById("reservationDate").value;
+          const defaultTime = document.getElementById("reservationTime").value;
+              
+          if (!defaultDate || !defaultTime) {
+              console.log('頁面載入時尚未設定預設時間，跳過檢查');
+               return; // 如果還沒有預設時間就不檢查
+           }
+              
+           const defaultPickupTime = `${defaultDate}T${defaultTime}:00+08:00`;
+           console.log('檢查預設時間:', defaultPickupTime);
+              
+          const response = await fetch(`${API_BASE}/api/orders/check-capacity?pickup_time=${encodeURIComponent(defaultPickupTime)}`);
+          const data = await response.json();
+              
+           console.log('頁面載入容量檢查結果:', data);
+              
+          if (data.is_blocked) {
+              const warning = document.createElement('div');
+              warning.style.cssText = 'background:#ffebee; color:#c62828; padding:15px; margin:10px; border-radius:8px; text-align:center; font-weight:bold;';
+               warning.textContent = data.message;
+              document.querySelector('.container').insertBefore(warning, document.querySelector('.menu'));
+          }
+       } catch (error) {
+          console.log('無法檢查時段容量:', error);
+       }
+    }
+
+    // 檢查時段容量的函數（即時顯示在時間選擇下方）
+    async function checkTimeSlotCapacity() {
+      const capacityInfo = document.getElementById("capacityInfo");
+      
+      if (!reservationDate.value || !reservationTime.value) {
+        capacityInfo.style.display = "none";
+        return;
+      }
+
+      const pickup_time = `${reservationDate.value}T${reservationTime.value}:00+08:00`;
+      
+      try {
+        capacityInfo.style.display = "block";
+        capacityInfo.style.background = "#f0f0f0";
+        capacityInfo.style.color = "#666";
+        capacityInfo.textContent = "⏳ 檢查中...";
+
+        const res = await fetch(`${API_BASE}/api/orders/check-capacity?pickup_time=${encodeURIComponent(pickup_time)}`);
+        const data = await res.json();
+
+        if (data.canAcceptOrders) {
+          capacityInfo.style.background = "#d4edda";
+          capacityInfo.style.color = "#155724";
+          capacityInfo.textContent = `✅ ${data.message} 目前${data.current_orders}/${data.limit} 組`;
+        } else {
+          capacityInfo.style.background = "#f8d7da";
+          capacityInfo.style.color = "#721c24";
+          capacityInfo.textContent = `❌ ${data.message} 目前${data.current_orders}/${data.limit} 組`;
+        }
+      } catch (error) {
+        console.error("檢查容量失敗:", error);
+        capacityInfo.style.background = "#fff3cd";
+        capacityInfo.style.color = "#856404";
+        capacityInfo.textContent = "⚠️ 無法檢查時段容量，請稍後再試";
+      }
+    }
+
+    window.onload = () => {
+      renderCart();
+
+      // 恢復登入狀態
+      const phone = sessionStorage.getItem("phone");
+      const name = sessionStorage.getItem("name");
+      if (phone && name) {
+        currentUser = { phone, name };
+        updateAuthUI();
+      }
+
+      // 讀取 URL reorder 參數（優先使用）
+      const urlParams = new URLSearchParams(window.location.search);
+      const reorderParam = urlParams.get('reorder');
+
+      if (reorderParam) {
+        try {
+          // ✅ 將 URL-safe Base64 轉回標準 Base64
+          let base64 = reorderParam.replace(/-/g, '+').replace(/_/g, '/');
+          while (base64.length % 4) {
+            base64 += '=';
+          }
+
+          // ✅ Base64 → UTF-8 → JSON
+          const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+          const decoded = new TextDecoder().decode(bytes);
+          const items = JSON.parse(decoded);
+
+          if (Array.isArray(items) && items.length > 0) {
+            items.forEach(item => addTakeoutItemToCart(item));
+            renderCart();
+            alert("已將歷史訂單加入購物車！");
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (e) {
+          console.error("讀取 URL reorder 資料失敗", e);
+          alert("讀取歷史訂單失敗，請重新點餐。");
+        }
+      } else {
+        // localStorage 再次訂購保險機制
+        const reorderData = localStorage.getItem("reorderItems");
+        if (reorderData) {
+          try {
+            const items = JSON.parse(reorderData);
+            items.forEach(item => addTakeoutItemToCart(item));
+            renderCart();
+            alert("已將歷史訂單加入購物車！");
+          } catch (e) {
+            console.error("localStorage 讀取 reorderItems 失敗", e);
+          }
+        }
+      }
+    };
+
+    // 將歷史訂單項目加入購物車（外帶）
+    function addTakeoutItemToCart(item) {
+      let customOptions = {};
+      if (item.custom_options) {
+          if (typeof item.custom_options === "string") {
+              try {
+                  customOptions = JSON.parse(item.custom_options);
+              } catch (e) {
+                  console.warn("custom_options 解析失敗:", item.custom_options);
+                  customOptions = {};
+              }
+          } else if (typeof item.custom_options === "object") {
+              customOptions = item.custom_options;
+          }
+      }
+
+      const customText = Object.values(customOptions).length
+          ? `（${Object.values(customOptions).join("｜")}）`
+          : "";
+
+      const itemTotal = item.price * item.quantity;
+
+      orderList.push({
+          name: item.item_name || item.name,
+          price: item.price,
+          quantity: item.quantity,
+          customization: customOptions,
+          text: `${item.item_name || item.name}${customText} x ${item.quantity} = ${itemTotal} 元`,
+          table_number: "外帶",
+          takeout: "外帶"
+      });
+    }
+    </script>
+  </body>
+</html>
