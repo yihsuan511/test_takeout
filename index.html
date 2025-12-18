@@ -298,23 +298,25 @@
         return;
       }
       
-      const reservationDateTime = new Date(`${reservationDate.value}T${reservationTime.value}:00`);
-      const localDateTime = `${reservationDate.value}T${reservationTime.value}:00`;
-      const pickupDate = new Date(localDateTime);
+      const pickup_display = `${reservationDate.value} ${reservationTime.value}`;
+      const pickup_time = `${reservationDate.value}T${reservationTime.value}:00+08:00`;
+      // const reservationDateTime = new Date(`${reservationDate.value}T${reservationTime.value}:00`);
+      // const localDateTime = `${reservationDate.value}T${reservationTime.value}:00`;
+      // const pickupDate = new Date(localDateTime);
 
       // 手動調整為台灣時區 (UTC+8)
       // 假設用戶選擇的是台灣當地時間,需要轉換為正確的 UTC
-      const taiwanOffset = 8 * 60; // 8小時 = 480分鐘
-      const userTimezoneOffset = pickupDate.getTimezoneOffset(); // 用戶時區偏移(分鐘)
-      const offsetDiff = taiwanOffset + userTimezoneOffset;
-      pickupDate.setMinutes(pickupDate.getMinutes() - offsetDiff);
+      // const taiwanOffset = 8 * 60; // 8小時 = 480分鐘
+      // const userTimezoneOffset = pickupDate.getTimezoneOffset(); // 用戶時區偏移(分鐘)
+      // const offsetDiff = taiwanOffset + userTimezoneOffset;
+      // pickupDate.setMinutes(pickupDate.getMinutes() - offsetDiff);
 
       // 轉換為 ISO 字串傳給後端
-      const pickup_time = pickupDate.toISOString();
+      // const pickup_time = pickupDate.toISOString();
 
       console.log('用戶選擇的時間:', localDateTime);
       console.log('轉換後的 UTC 時間:', pickup_time);
-      const pickup_display = `${reservationDate.value} ${reservationTime.value}:00`; // 用於前端顯示，保持原本用戶選擇的時間格式
+      // const pickup_display = `${reservationDate.value} ${reservationTime.value}:00`; // 用於前端顯示，保持原本用戶選擇的時間格式
       console.log('預約取餐時間:', pickup_time); // 除錯用
       
       if (!currentUser) {
@@ -484,13 +486,26 @@
       sessionStorage.removeItem("name");
       updateAuthUI();
     }
+
     function showOrderModal(orderId, total, items = [], pickup_time) {
       document.getElementById("orderNumber").textContent = `訂單編號：#${orderId}`;
-      document.getElementById("pickupTime").textContent = `預估取餐時間：約 ${pickup_time}`; // 使用選擇時間
+      
+      // 直接顯示傳入的 pickup_time 字串，不進行 Date 物件轉換
+      // 這樣能確保顯示的永遠是你剛才在下拉選單選中的「所見即所得」時間
+      document.getElementById("pickupTime").textContent = `預估取餐時間：${pickup_time}`; 
 
       let detailsHtml = "<ul>";
       items.forEach(i => {
-        detailsHtml += `<li>${i.item_name} x ${i.quantity} - ${i.price} 元</li>`;
+          // 解析客製化選項以便顯示（如果需要的話）
+          let customText = "";
+          try {
+              const options = typeof i.custom_options === 'string' ? JSON.parse(i.custom_options) : i.custom_options;
+              if (options && Object.values(options).length > 0) {
+                  customText = `（${Object.values(options).join('｜')}）`;
+              }
+          } catch(e) { customText = ""; }
+          
+          detailsHtml += `<li>${i.item_name}${customText} x ${i.quantity} - ${i.price * i.quantity} 元</li>`;
       });
       detailsHtml += "</ul>";
       document.getElementById("orderDetails").innerHTML = detailsHtml;
