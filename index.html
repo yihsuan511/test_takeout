@@ -288,7 +288,7 @@
 
     // 送單事件
     document.getElementById("submitOrder").addEventListener("click", async() => {
-      // 先獲取預約時間
+      // 1. 獲取預約日期與時間的值
       const reservationDate = document.getElementById("reservationDate");
       const reservationTime = document.getElementById("reservationTime");
 
@@ -298,26 +298,19 @@
         return;
       }
       
-      const pickup_display = `${reservationDate.value} ${reservationTime.value}`;
-      const pickup_time = `${reservationDate.value}T${reservationTime.value}:00+08:00`;
-      const reservationDateTime = new Date(`${reservationDate.value}T${reservationTime.value}:00`);
-      const localDateTime = `${reservationDate.value}T${reservationTime.value}:00`;
-      const pickupDate = new Date(localDateTime);
+      // --- 核心修復：直接抓取選單的值，不使用會產生誤差的 Date 物件 ---
+      const selectedDate = reservationDate.value; // 例如: "2025-12-20"
+      const selectedTime = reservationTime.value; // 例如: "13:50"
 
-      // 手動調整為台灣時區 (UTC+8)
-      // 假設用戶選擇的是台灣當地時間,需要轉換為正確的 UTC
-      // const taiwanOffset = 8 * 60; // 8小時 = 480分鐘
-      // const userTimezoneOffset = pickupDate.getTimezoneOffset(); // 用戶時區偏移(分鐘)
-      // const offsetDiff = taiwanOffset + userTimezoneOffset;
-      // pickupDate.setMinutes(pickupDate.getMinutes() - offsetDiff);
+      // 彈出視窗顯示用的時間：直接組合，保證「所見即所得」
+      const pickup_display = `${selectedDate} ${selectedTime}`;
+      
+      // 傳給資料庫的時間格式：加上台灣時區標籤 (+08:00)
+      const pickup_time = `${selectedDate}T${selectedTime}:00+08:00`;
 
-      // 轉換為 ISO 字串傳給後端
-      // const pickup_time = pickupDate.toISOString();
-
-      console.log('用戶選擇的時間:', localDateTime);
-      console.log('轉換後的 UTC 時間:', pickup_time);
-      // const pickup_display = `${reservationDate.value} ${reservationTime.value}:00`; // 用於前端顯示，保持原本用戶選擇的時間格式
-      console.log('預約取餐時間:', pickup_time); // 除錯用
+      // 修正後的 Console Log，不再調用不存在的 localDateTime
+      console.log('預約取餐時間 (顯示用):', pickup_display);
+      console.log('預約取餐時間 (資料庫用):', pickup_time);
       
       if (!currentUser) {
         if (confirm("需要先會員登入才能送出訂單，是否要立即登入？")) {
@@ -797,4 +790,5 @@
     </script>
   </body>
 </html>
+
 
