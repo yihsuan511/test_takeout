@@ -480,8 +480,8 @@
       updateAuthUI();
     }
 
-    function showOrderModal(orderId, total, items = [], pickup_time) {
-      document.getElementById("orderNumber").textContent = `訂單編號：#${orderId}`;
+    function showOrderModal(orderNo, total, items = [], pickup_time) {
+      document.getElementById("orderNumber").textContent = `訂單編號：#${orderNo}`;
       
       // 直接顯示傳入的 pickup_time 字串，不進行 Date 物件轉換
       // 這樣能確保顯示的永遠是你剛才在下拉選單選中的「所見即所得」時間
@@ -790,5 +790,3 @@
     </script>
   </body>
 </html>
-
-
